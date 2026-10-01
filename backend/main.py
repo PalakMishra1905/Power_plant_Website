@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import torch
 import torch.nn as nn
@@ -17,6 +19,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+base_dir = os.path.dirname(os.path.dirname(__file__))
+frontend_dir = os.path.join(base_dir, "frontend")
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 # 1. Define the ANN architecture exactly as in the training notebook
 class ANN(nn.Module):
@@ -40,7 +46,6 @@ scaler = None
 @app.on_event("startup")
 def load_assets():
     global model, scaler
-    base_dir = os.path.dirname(os.path.dirname(__file__))
     model_path = os.path.join(base_dir, "best_model.pt")
     scaler_path = os.path.join(base_dir, "scaler.pkl")
     
@@ -87,4 +92,7 @@ def predict(request: PredictionRequest):
 
 @app.get("/")
 def read_root():
-    return {"message": "Power Plant Energy Prediction API is running."}
+    index_path = os.path.join(frontend_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"message": "Frontend not found, API is running."}

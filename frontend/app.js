@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chartsGrid = document.getElementById('charts-grid');
     const emptyChartsMsg = document.getElementById('empty-charts-msg');
 
-    const API_URL = 'http://127.0.0.1:8000/predict';
+    const API_URL = '/predict';
     const MAX_HISTORY = 50;
 
     // Charts instances

@@ -1,6 +1,7 @@
 pandas
 scikit-learn
 torch
+numpy
 fastapi
 uvicorn
 joblib
