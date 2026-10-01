@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Plant Energy Prediction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>Energy<span class="highlight">Pred</span></h1>
+            <p>Advanced ML Prediction for Power Plant Output</p>
+        </header>
+
+        <main>
+            <form id="prediction-form" class="glass-panel">
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="at">Temperature (AT) &deg;C</label>
+                        <input type="number" id="at" name="AT" step="0.01" min="1.81" max="37.11" required placeholder="e.g. 14.96">
+                        <small class="range-hint">Range: 1.81 - 37.11</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="v">Vacuum (V) cm Hg</label>
+                        <input type="number" id="v" name="V" step="0.01" min="25.36" max="81.56" required placeholder="e.g. 41.76">
+                        <small class="range-hint">Range: 25.36 - 81.56</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="ap">Pressure (AP) mbar</label>
+                        <input type="number" id="ap" name="AP" step="0.01" min="992.89" max="1033.30" required placeholder="e.g. 1024.07">
+                        <small class="range-hint">Range: 992.89 - 1033.30</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="rh">Humidity (RH) %</label>
+                        <input type="number" id="rh" name="RH" step="0.01" min="25.56" max="100.16" required placeholder="e.g. 73.17">
+                        <small class="range-hint">Range: 25.56 - 100.16</small>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn">
+                    <span class="btn-text">Predict Energy</span>
+                    <div class="loader" id="btn-loader"></div>
+                </button>
+            </form>
+
+            <div id="result-container" class="glass-panel hidden">
+                <div class="result-header">Predicted Produced Energy</div>
+                <div class="result-value">
+                    <span id="prediction-value">0.00</span>
+                    <span class="unit">MW</span>
+                </div>
+            </div>
+            
+            <div id="error-container" class="glass-panel error hidden">
+                <p id="error-message"></p>
+            </div>
+
+            <!-- HISTORY SECTION -->
+            <section id="history-section" class="glass-panel mt-2">
+                <div class="section-header">
+                    <h2>Prediction History</h2>
+                    <button type="button" id="clear-history-btn" class="secondary-btn hidden">Clear History</button>
+                </div>
+                <div class="table-responsive">
+                    <table id="history-table" class="hidden">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>AT (&deg;C)</th>
+                                <th>V (cm Hg)</th>
+                                <th>AP (mbar)</th>
+                                <th>RH (%)</th>
+                                <th>Predicted PE (MW)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                            <!-- History rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-history-msg" class="empty-msg">
+                    No prediction data available yet. Make a prediction to see the history.
+                </div>
+            </section>
+
+            <!-- CHARTS SECTION -->
+            <section id="charts-section" class="glass-panel mt-2">
+                <div class="section-header">
+                    <h2>Analytics & Charts</h2>
+                </div>
+                <div id="empty-charts-msg" class="empty-msg">
+                    No prediction data available yet. Make a prediction to see the charts.
+                </div>
+                <div id="charts-grid" class="charts-grid hidden">
+                    <div class="chart-container">
+                        <canvas id="chart-at"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-v"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-ap"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart-rh"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
