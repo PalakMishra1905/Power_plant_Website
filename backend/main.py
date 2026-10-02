@@ -8,6 +8,10 @@ import torch.nn as nn
 import joblib
 import numpy as np
 import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+
 
 app = FastAPI(title="Power Plant Energy Prediction API")
 
@@ -87,6 +91,85 @@ def predict(request: PredictionRequest):
             prediction = model(input_tensor)
             
         return {"predicted_PE": float(prediction.item())}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 4. Global variable for performance caching
+performance_data = None
+
+@app.get("/model-performance")
+def get_model_performance():
+    global performance_data
+    if performance_data is not None:
+        return performance_data
+
+    try:
+        df_path = os.path.join(base_dir, "powerplant_data.csv")
+        if not os.path.exists(df_path):
+            raise HTTPException(status_code=404, detail="Dataset not found for evaluation.")
+
+        df = pd.read_csv(df_path)
+        X = df.drop("PE", axis=1)
+        y = df["PE"]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size = 0.2, random_state = 42
+        )
+
+        X_test_scaled = scaler.transform(X_test)
+        X_test_tensor = torch.tensor(X_test_scaled, dtype=torch.float32)
+        
+        model.eval()
+        with torch.no_grad():
+            preds = model(X_test_tensor).numpy().flatten()
+            
+        actuals = y_test.values
+
+        r2 = r2_score(actuals, preds)
+        mae = mean_absolute_error(actuals, preds)
+        rmse = np.sqrt(mean_squared_error(actuals, preds))
+
+        np.random.seed(42)
+        indices = np.random.choice(len(actuals), min(500, len(actuals)), replace=False)
+        scatter_data = [{"actual": float(actuals[i]), "predicted": float(preds[i])} for i in indices]
+
+        baseline_r2 = r2
+        importances = {}
+        features = ["AT", "V", "AP", "RH"]
+        for i, col in enumerate(features):
+            col_importance_sum = 0.0
+            for _ in range(5):
+                X_test_shuffled = X_test.copy()
+                X_test_shuffled.iloc[:, i] = np.random.permutation(X_test_shuffled.iloc[:, i].values)
+                X_test_shuffled_scaled = scaler.transform(X_test_shuffled)
+                X_test_shuffled_tensor = torch.tensor(X_test_shuffled_scaled, dtype=torch.float32)
+                with torch.no_grad():
+                    preds_shuffled = model(X_test_shuffled_tensor).numpy().flatten()
+                shuffled_r2 = r2_score(actuals, preds_shuffled)
+                col_importance_sum += (baseline_r2 - shuffled_r2)
+            importances[col] = float(col_importance_sum / 5.0)
+
+        feature_importance = [
+            {"feature": "AT", "description": "Ambient Temperature", "importance": importances["AT"]},
+            {"feature": "V", "description": "Exhaust Vacuum", "importance": importances["V"]},
+            {"feature": "AP", "description": "Ambient Pressure", "importance": importances["AP"]},
+            {"feature": "RH", "description": "Relative Humidity", "importance": importances["RH"]}
+        ]
+        feature_importance.sort(key=lambda x: x["importance"], reverse=True)
+
+        performance_data = {
+            "metrics": {
+                "r2": float(r2),
+                "mae": float(mae),
+                "rmse": float(rmse)
+            },
+            "scatter_data": scatter_data,
+            "feature_importance": feature_importance
+        }
+        return performance_data
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

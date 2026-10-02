@@ -375,3 +375,62 @@ tbody tr:hover {
     position: relative;
     height: 300px;
 }
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.metric-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+}
+
+.metric-title {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.metric-desc {
+    font-size: 0.8rem;
+    color: rgba(148, 163, 184, 0.8);
+    line-height: 1.4;
+}
+
+.large-chart {
+    height: 350px;
+}
+
+.explainability-note {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    padding: 1rem 0;
+    border-top: 1px dashed var(--glass-border);
+    margin-top: 1rem;
+}
+
+.mt-1 {
+    margin-top: 1rem;
+}

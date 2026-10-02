@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Charts instances
     let chartAT, chartV, chartAP, chartRH;
+    let chartActualVsPredicted, chartFeatureImportance;
 
     // Initialize application
     initApp();
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadHistory();
         initCharts();
         updateUI();
+        loadModelPerformance();
     }
 
     form.addEventListener('submit', async (e) => {
@@ -256,5 +258,151 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         window.requestAnimationFrame(step);
+    }
+
+    async function loadModelPerformance() {
+        try {
+            const response = await fetch('/model-performance');
+            if (!response.ok) throw new Error('Failed to load performance data');
+            
+            const data = await response.json();
+            
+            document.getElementById('metric-r2').textContent = data.metrics.r2.toFixed(4);
+            document.getElementById('metric-mae').textContent = data.metrics.mae.toFixed(4);
+            document.getElementById('metric-rmse').textContent = data.metrics.rmse.toFixed(4);
+
+            document.getElementById('performance-section').classList.remove('hidden');
+
+            if (typeof Chart !== 'undefined') {
+                renderActualVsPredicted(data.scatter_data);
+                renderFeatureImportance(data.feature_importance);
+            }
+        } catch (error) {
+            console.error('Error loading model performance:', error);
+            // Silently fail if performance dashboard can't load, doesn't break main app
+        }
+    }
+
+    function renderActualVsPredicted(scatterData) {
+        const ctx = document.getElementById('chart-actual-vs-predicted').getContext('2d');
+        const formattedData = scatterData.map(d => ({ x: d.actual, y: d.predicted }));
+
+        // Find min/max for the reference line
+        const allVals = scatterData.map(d => d.actual).concat(scatterData.map(d => d.predicted));
+        const minVal = Math.min(...allVals) - 5;
+        const maxVal = Math.max(...allVals) + 5;
+
+        chartActualVsPredicted = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'Predicted vs Actual',
+                        data: formattedData,
+                        backgroundColor: '#8b5cf6', // Secondary color
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Perfect Prediction',
+                        data: [{x: minVal, y: minVal}, {x: maxVal, y: maxVal}],
+                        type: 'line',
+                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Actual vs. Predicted Energy (MW)', color: '#f8fafc', font: { size: 16, family: 'Outfit' } },
+                    legend: { labels: { color: '#f8fafc', font: { family: 'Outfit' } } },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { family: 'Outfit' },
+                        bodyFont: { family: 'Outfit' },
+                        padding: 10,
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Actual Energy (MW)', color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Predicted Energy (MW)', color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderFeatureImportance(importanceData) {
+        const ctx = document.getElementById('chart-feature-importance').getContext('2d');
+        const labels = importanceData.map(d => `${d.feature} - ${d.description}`);
+        const values = importanceData.map(d => d.importance);
+
+        chartFeatureImportance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Decrease in R² Score',
+                    data: values,
+                    backgroundColor: [
+                        '#ef4444', // Red
+                        '#3b82f6', // Blue
+                        '#10b981', // Green
+                        '#f59e0b'  // Yellow
+                    ],
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.1)'
+                }]
+            },
+            options: {
+                indexAxis: 'y', // horizontal bar chart
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Feature Importance (Permutation)', color: '#f8fafc', font: { size: 16, family: 'Outfit' } },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `Importance: ${ctx.raw.toFixed(4)}`
+                        },
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleFont: { family: 'Outfit' },
+                        bodyFont: { family: 'Outfit' },
+                        padding: 10,
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Decrease in R² Score', color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#f8fafc', font: { family: 'Outfit' } }
+                    }
+                }
+            }
+        });
     }
 });
