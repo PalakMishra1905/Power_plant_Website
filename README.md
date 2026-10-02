@@ -2,11 +2,11 @@
 
 A web-based **Power Plant Energy Prediction** application that uses an Artificial Neural Network (ANN) trained with PyTorch to predict electrical energy output based on environmental and operational parameters.
 
-The application combines a **PyTorch ANN model**, **FastAPI backend**, and a responsive **HTML/CSS/JavaScript frontend** into a single web application.
+The application combines a **PyTorch ANN model**, **FastAPI backend**, and a responsive **HTML/CSS/JavaScript frontend** into a single web application. It also includes an interactive model performance dashboard to evaluate prediction accuracy and understand feature importance.
 
 ## 🚀 Live Application
 
-**Live Demo:** Add your Render URL here after deployment.
+**Live Demo:** https://power-plant-website.onrender.com/
 
 ## 📌 Features
 
@@ -17,10 +17,15 @@ The application combines a **PyTorch ANN model**, **FastAPI backend**, and a res
 * 📝 Prediction history stored in the browser
 * 🔄 Prediction history persists after page refresh
 * 🗑️ Clear prediction history
+* 📉 Model performance dashboard
+* 📊 Model evaluation metrics: R², MAE, and RMSE
+* 🎯 Actual vs. Predicted energy output visualization
+* 🔍 Permutation-based feature importance analysis
+* 📈 Interactive feature importance chart
 * 🎨 Responsive and modern user interface
 * 🚀 FastAPI REST API
 * 📚 Swagger API documentation
-* ☁️ Ready for deployment on Render
+* ☁️ Deployed on Render
 
 ## 🧠 Machine Learning Model
 
@@ -50,33 +55,95 @@ best_model.pt
 scaler.pkl
 ```
 
-The model achieved an approximate **R² score of 0.935** during model evaluation.
+### ANN Architecture
+
+The neural network consists of the following layers:
+
+```text
+Input Layer (4 neurons)
+        |
+        v
+Hidden Layer (6 neurons)
+        |
+      ReLU
+        |
+        v
+Hidden Layer (6 neurons)
+        |
+      ReLU
+        |
+        v
+Output Layer (1 neuron)
+```
+
+The model achieved approximately **R² = 0.935** during evaluation.
+
+## 📊 Model Performance Dashboard
+
+The application includes a model performance dashboard that provides insights into the trained ANN's predictive performance.
+
+### Evaluation Metrics
+
+The dashboard displays the following metrics:
+
+| Metric   | Description                                                                                      |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| R² Score | Measures how well the model explains the variation in energy output.                             |
+| MAE      | Mean Absolute Error, measuring the average absolute prediction error in MW.                      |
+| RMSE     | Root Mean Squared Error, measuring prediction error while penalizing larger errors more heavily. |
+
+### Actual vs. Predicted Chart
+
+An interactive scatter plot compares actual energy output values with the model's predicted values.
+
+This visualization helps assess how closely the predictions match the actual values and identify deviations in model performance.
+
+### Feature Importance
+
+The dashboard uses **permutation feature importance** to estimate how much each input feature contributes to model performance.
+
+The method evaluates the change in the model's R² score when the values of an individual feature are shuffled.
+
+A larger drop in R² indicates that the model relies more heavily on that feature for its predictions.
+
+The feature importance chart displays the relative importance of:
+
+* Ambient Temperature (AT)
+* Exhaust Vacuum (V)
+* Ambient Pressure (AP)
+* Relative Humidity (RH)
+
+These values represent the model's measured dependence on the input features, not causal effects on power generation.
 
 ## 🏗️ Architecture
 
 ```text
-User
-  │
-  ▼
-Frontend
-HTML + CSS + JavaScript
-  │
-  │ POST /predict
-  ▼
-FastAPI Backend
-  │
-  ├── Input validation
-  ├── Feature scaling
-  └── ANN inference
-        │
-        ▼
-   PyTorch ANN Model
-        │
-        ▼
- Predicted Energy (MW)
+                         User
+                          |
+                          v
+                 Frontend Interface
+              HTML + CSS + JavaScript
+                          |
+             +------------+------------+
+             |                         |
+             v                         v
+       POST /predict            GET /model-performance
+             |                         |
+             v                         v
+        FastAPI Backend           Model Evaluation
+             |                         |
+      Input Validation           Load Evaluation Data
+             |                         |
+       Feature Scaling          Calculate Metrics
+             |                         |
+             v                  Actual vs. Predicted
+       PyTorch ANN Model        Feature Importance
+             |                         |
+             v                         v
+      Predicted Energy          Dashboard Visualizations
 ```
 
-FastAPI serves both the frontend and prediction API, allowing the application to run as a single web service.
+FastAPI serves both the frontend and backend API, allowing the application to run as a single web service.
 
 ## 📂 Project Structure
 
@@ -93,6 +160,7 @@ Power_plant_Website/
 │
 ├── best_model.pt
 ├── scaler.pkl
+├── powerplant_data.csv
 ├── requirements.txt
 └── README.md
 ```
@@ -120,10 +188,11 @@ Power_plant_Website/
 * JavaScript
 * Chart.js
 
-### Deployment
+### Deployment and Tools
 
 * Render
 * GitHub
+* Git
 
 ## 💻 Run Locally
 
@@ -152,8 +221,6 @@ python -m uvicorn backend.main:app --reload
 ```
 
 ### 5. Open the application
-
-Open:
 
 ```text
 http://127.0.0.1:8000
@@ -184,16 +251,20 @@ Example prediction:
 Predicted Energy ≈ 467.52 MW
 ```
 
+The prediction may vary slightly depending on the model and numerical precision.
+
 ## 📊 Prediction History & Charts
 
 The application stores recent predictions in the browser using `localStorage`.
 
-The dashboard provides interactive charts for:
+The prediction dashboard provides interactive charts for:
 
-* Ambient Temperature vs Produced Energy
-* Exhaust Vacuum vs Produced Energy
-* Ambient Pressure vs Produced Energy
-* Relative Humidity vs Produced Energy
+* Ambient Temperature vs. Produced Energy
+* Exhaust Vacuum vs. Produced Energy
+* Ambient Pressure vs. Produced Energy
+* Relative Humidity vs. Produced Energy
+
+Users can review previous predictions, retain history after refreshing the page, and clear the stored history when needed.
 
 No database is required for prediction history.
 
@@ -203,7 +274,7 @@ No database is required for prediction history.
 
 Predicts the produced electrical energy based on the four input parameters.
 
-Example request:
+**Example request:**
 
 ```json
 {
@@ -214,7 +285,7 @@ Example request:
 }
 ```
 
-Example response:
+**Example response:**
 
 ```json
 {
@@ -222,9 +293,21 @@ Example response:
 }
 ```
 
+### GET `/model-performance`
+
+Returns model evaluation information for the performance dashboard.
+
+The response includes:
+
+* **Metrics:** R² score, MAE, and RMSE.
+* **Scatter data:** Actual and predicted energy output values for visualization.
+* **Feature importance:** Permutation importance values for the four input features.
+
+The endpoint uses the evaluation dataset and the model to calculate the performance information displayed in the frontend.
+
 ## ☁️ Deployment
 
-The application is configured for deployment on **Render** as a single Web Service.
+The application is deployed on **Render** as a single Web Service.
 
 ### Build Command
 
@@ -238,41 +321,59 @@ pip install -r requirements.txt
 uvicorn backend.main:app --host 0.0.0.0 --port $PORT
 ```
 
-FastAPI serves both the frontend and the `/predict` API from the same service.
+FastAPI serves both the frontend and the prediction and model-performance APIs from the same service.
 
 ## 📈 Model Workflow
 
 ```text
 Dataset
-   │
-   ▼
+   |
+   v
 Data Preprocessing
-   │
-   ▼
+   |
+   v
 Train/Test Split
-   │
-   ▼
+   |
+   v
 StandardScaler
-   │
-   ▼
+   |
+   v
 ANN Training
-   │
-   ▼
+   |
+   v
 Model Evaluation
-   │
-   ▼
-best_model.pt
-   │
-   ▼
+   |
+   v
+Save Model and Scaler
+   |
+   v
 FastAPI Integration
-   │
-   ▼
+   |
+   v
 Web Application
+   |
+   +------------------------+
+   |                        |
+   v                        v
+Energy Prediction     Model Performance
+                            |
+                  +---------+---------+
+                  |                   |
+                  v                   v
+             Evaluation         Permutation
+               Metrics        Feature Importance
+                  |                   |
+                  +---------+---------+
+                            |
+                            v
+                     Dashboard Charts
 ```
 
 ## 🎯 Project Objective
 
-The objective of this project is to build an end-to-end machine learning application that demonstrates the complete workflow from **model development and preprocessing to API integration, frontend development, and cloud deployment**.
+The objective of this project is to build an end-to-end machine learning application that demonstrates the complete workflow from **model development and preprocessing to model evaluation, API integration, frontend visualization, and cloud deployment**.
+
+By combining energy prediction with model performance analysis and feature importance visualization, the application provides both predictions and insights into the trained model.
 
 ## 👩‍💻 Author
 
